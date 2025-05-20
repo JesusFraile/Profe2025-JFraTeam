@@ -5,9 +5,9 @@ import time
 import json
 from controllers.controllers import extract_json
 class responderAgent():
-    def __init__(self, api_key):
+    def __init__(self, api_key, model_name):
         genai.configure(api_key=api_key)
-        self.model=genai.GenerativeModel("gemini-1.5-flash")
+        self.model=genai.GenerativeModel(model_name)
         self.task='responder'
         self.max_attempts=5
 
@@ -26,12 +26,13 @@ Eres un experto en el conocimiento de la lengua española y en la comprensión d
 A: {options[0]}
 B: {options[1]}
 C: {options[2]}
+D: {options[3]}
 </OPTIONS>
 
 <INSTRUCTIONS>
 You have to generate a json:
 {{
-  "selected_option": "Chosen option A, B, or C (ONLY ONE)",
+  "selected_option": "Chosen option A, B, C or D (ONLY ONE)",
   "justification": "Explain why this option was selected based on the given input"
 }}
 </INSTRUCTIONS>
@@ -49,6 +50,7 @@ You have to generate a json:
                 #Completar con el control de límite
                 prompt=self.generate_prompt(exercise, question, options)
                 response=self.model.generate_content(prompt)
+                time.sleep(5)
                 # print(response)
                 entry_result_json = extract_json(response.text, self.task)
                 selected_option=entry_result_json[0]
@@ -57,7 +59,7 @@ You have to generate a json:
                 return selected_option, justification
             except (json.JSONDecodeError, Exception) as error:
               print(f"Error encountered (attempt {attempts + 1}):", error)
-              print(response)
+            #   print(response)
               attempts += 1
               time.sleep(10)  
             except Exception as error:

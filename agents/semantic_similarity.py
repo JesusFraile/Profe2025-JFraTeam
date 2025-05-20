@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer, util
 
 class semanticAgent():
     def __init__(self, path):
-        self.model= SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        self.model= SentenceTransformer(path)
         self.task='semantic_similarity'
     
     def compare_sentences(self, sentence1, sentence2):
@@ -20,7 +20,10 @@ class semanticAgent():
     def get_scores(self, blind_agent_answer, options):
         scores=[]
         for sentence in options:
-            similarity=self.compare_sentences(sentence, blind_agent_answer)
+            if sentence=='':
+                similarity=0
+            else:
+                similarity=self.compare_sentences(sentence, blind_agent_answer)
             scores.append(similarity)
         return scores.index(max(scores)), scores
 

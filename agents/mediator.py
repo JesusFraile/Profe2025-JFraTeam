@@ -4,24 +4,24 @@ import time
 import json
 from controllers.controllers import extract_json
 
-class responderAgent():
-    def __init__(self, api_key):
+class mediatorAgent():
+    def __init__(self, api_key, model_name):
         genai.configure(api_key=api_key)
-        self.model=genai.GenerativeModel("gemini-1.5-flash")
+        self.model=genai.GenerativeModel(model_name)
         self.task='mediator'
         self.max_attempts=5
 
-    def generate_prompt(self, exercise, question, options, responder_answer, responder_justification, evaluator1_answer, evaluator1_justification, evaluator2_answer, evaluator2_justification, blind_responder_answer, blind_responder_justification):
-        l=['A', 'B', 'C']
+    def generate_prompt(self, exercise, question, options, responder_answer, responder_justification, blind_responder_answer, evaluator1_answer, evaluator1_justification, evaluator2_answer, evaluator2_justification, evaluator3_answer, evaluator3_justification):
+        l=['A', 'B', 'C', 'D']
         l.remove(responder_answer)
 
         prompt=f"""
-Estás actuando como un agente mediador en un proceso de resolución de desacuerdos entre cuatro agentes. Cada uno tiene un enfoque diferente para abordar la pregunta planteada. Tu tarea es facilitar la resolución del desacuerdo y garantizar que todos los agentes lleguen a un consenso basado en la justificación de sus respuestas.
+Estás actuando como un agente mediador en un proceso de resolución de desacuerdos entre cinco agentes. Cada uno tiene un enfoque diferente para abordar la pregunta planteada. Tu tarea es facilitar la resolución del desacuerdo y garantizar que todos los agentes lleguen a un consenso basado en la justificación de sus respuestas.
 
 <AGENTS DESCRIPTIONS>
 Agente 1: Responde a la pregunta basada en las posibles respuestas disponibles. Tiene que dar una justificación de la respuesta.
 Agente 2: Responde a la pregunta sin ver las posibles respuestas disponibles. Posteriormente se realiza un match por similitud semántica entre su respuesta y las posibles respuestas disponibles.
-Agente 3 y 4: Reciben las respuestas no seleccionadas por el Agente 1 y responden si esas respuestas son correctas o no. 
+Agente 3, 4 y 5: Reciben las respuestas no seleccionadas por el Agente 1 y responden si esas respuestas son correctas o no. 
 </AGENTS DESCRIPTIONS>
 
 <TEXT>
@@ -36,6 +36,7 @@ Agente 3 y 4: Reciben las respuestas no seleccionadas por el Agente 1 y responde
 A: {options[0]}
 B: {options[1]}
 C: {options[2]}
+D: {options[3]}
 </OPTIONS>
 
 <AGENTS ANSWERS>
@@ -43,12 +44,13 @@ C: {options[2]}
 *Agente 2: Respuesta: {blind_responder_answer}.
 *Agente 3: Respuesta para la opción {l[0]}: {evaluator1_answer}. Justificacion: {evaluator1_justification}
 *Agente 4: Respuesta para la opción {l[1]}: {evaluator2_answer}. Justificacion: {evaluator2_justification}
+*Agente 5: Respuesta para la opción {l[2]}: {evaluator3_answer}. Justificacion: {evaluator3_justification}
 </AGENTS ANSWERS>
 
 <INSTRUCTIONS>
 You have to generate a json:
 {{
-  "selected_option": "Chosen option A, B, or C (ONLY ONE)",
+  "selected_option": "Chosen option A, B, C or D (ONLY ONE)",
   "justification": "Explain why this option was selected based on the given input"
 }}
 </INSTRUCTIONS>
@@ -57,15 +59,16 @@ You have to generate a json:
 
 
 
-    def do_inference(self, exercise, question, options):
+    def do_inference(self, exercise, question, options, responder_answer, responder_justification, blind_responder_answer, evaluator1_answer, evaluator1_justification, evaluator2_answer, evaluator2_justification, evaluator3_answer, evaluator3_justification):
 
         global current_tpm, current_rpd, start_time, responses_today
         attempts = 0
         while attempts < self.max_attempts:
             try:
                 #Completar con el control de límite
-                prompt=self.generate_prompt(exercise, question, options)
+                prompt=self.generate_prompt(exercise, question, options, responder_answer, responder_justification, blind_responder_answer, evaluator1_answer, evaluator1_justification, evaluator2_answer, evaluator2_justification, evaluator3_answer, evaluator3_justification)
                 response=self.model.generate_content(prompt)
+                time.sleep(5)
                 # print(response)
                 entry_result_json = extract_json(response.text, self.task)
                 selected_option=entry_result_json[0]
@@ -74,7 +77,7 @@ You have to generate a json:
                 return selected_option, justification
             except (json.JSONDecodeError, Exception) as error:
               print(f"Error encountered (attempt {attempts + 1}):", error)
-              print(response)
+            #   print(response)
               attempts += 1
               time.sleep(10)  
             except Exception as error:

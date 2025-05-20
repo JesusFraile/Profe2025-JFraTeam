@@ -5,9 +5,9 @@ import time
 import json
 from controllers.controllers import extract_json
 class evaluatorAgent():
-    def __init__(self, api_key):
+    def __init__(self, api_key, model_name):
         genai.configure(api_key=api_key)
-        self.model=genai.GenerativeModel("gemini-1.5-flash")
+        self.model=genai.GenerativeModel(model_name)
         self.task='evaluator'
         self.max_attempts=5
 
@@ -38,24 +38,25 @@ You have to generate a json:
 
 
 
-    def do_inference(self, exercise, question, options):
+    def do_inference(self, exercise, question, option):
 
         global current_tpm, current_rpd, start_time, responses_today
         attempts = 0
         while attempts < self.max_attempts:
             try:
                 #Completar con el control de límite
-                prompt=self.generate_prompt(exercise, question, options)
+                prompt=self.generate_prompt(exercise, question, option)
                 response=self.model.generate_content(prompt)
+                time.sleep(5)
                 # print(response)
                 entry_result_json = extract_json(response.text, self.task)
                 selected_option=entry_result_json[0]
                 justification=entry_result_json[1]
 
-                return selected_option, justification
+                return selected_option.lower(), justification
             except (json.JSONDecodeError, Exception) as error:
               print(f"Error encountered (attempt {attempts + 1}):", error)
-              print(response)
+            #   print(response)
               attempts += 1
               time.sleep(10)  
             except Exception as error:

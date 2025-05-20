@@ -5,9 +5,9 @@ import time
 import json
 from controllers.controllers import extract_json
 class blind_responderAgent():
-    def __init__(self, api_key):
+    def __init__(self, api_key, model_name):
         genai.configure(api_key=api_key)
-        self.model=genai.GenerativeModel("gemini-1.5-flash")
+        self.model=genai.GenerativeModel(model_name)
         self.task='blind_responder'
         self.max_attempts=5
 
@@ -35,24 +35,28 @@ You have to generate a json:
 
 
 
-    def do_inference(self, exercise, question, options):
+    def do_inference(self, exercise, question):
 
         global current_tpm, current_rpd, start_time, responses_today
         attempts = 0
         while attempts < self.max_attempts:
             try:
                 #Completar con el control de límite
-                prompt=self.generate_prompt(exercise, question, options)
+                prompt=self.generate_prompt(exercise, question)
+                # print('='*10)
+                # print(prompt)
                 response=self.model.generate_content(prompt)
+                time.sleep(5)
                 # print(response)
-                entry_result_json = extract_json(response.text, self.task)
-                answer=entry_result_json[0]
                 
+                answer = extract_json(response.text, self.task)
+                # print(answer)
+                # print('='*10)
 
                 return answer
             except (json.JSONDecodeError, Exception) as error:
               print(f"Error encountered (attempt {attempts + 1}):", error)
-              print(response)
+            #   print(response)
               attempts += 1
               time.sleep(10)  
             except Exception as error:
@@ -62,7 +66,8 @@ You have to generate a json:
                     continue
                 print(f"Error encountered (attempt {attempts + 1}):", error)
                 attempts += 1
-                time.sleep(10)  
+                time.sleep(10)
+                
         print("Failed after", self.max_attempts, "attempts.")
         return response.text
 

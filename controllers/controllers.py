@@ -61,8 +61,3 @@ def extract_json(text, task):
                 return None  # Handle invalid JSON gracefully          
         return extract_option(text)
     
-
-
-
-def rate_limiter():
-    return
